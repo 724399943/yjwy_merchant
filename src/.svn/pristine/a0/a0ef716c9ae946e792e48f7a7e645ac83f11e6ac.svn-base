@@ -1,0 +1,102 @@
+<template>
+  	<div class="content">
+		<header class="head">
+			<a class="back" href="javascript:window.history.go(-1);"></a>
+			<h1 class="y-confirm-order-h1">修改密码</h1>
+		</header>
+		<div class="main">
+			 <div class="fgcont">
+          <div class="fgline">
+              <span>旧密码</span>
+              <div class="fginput">
+                  <input type="password" name="" placeholder="请输入旧密码" v-model="dataJson.old_password">
+              </div>
+          </div> 
+          <div class="fgline">
+              <span>新密码</span>
+              <div class="fginput">
+                  <input type="password" name="" placeholder="请输入您的新密码" v-model="dataJson.password">
+              </div>
+          </div> 
+          <div class="fgline">
+              <span>确认新密码</span>
+              <div class="fginput">
+                  <input type="password" name="" placeholder="请再次输入您的新密码" v-model="dataJson.repassword">
+              </div>
+          </div>   
+          <p :style="{display: displayStyle}">{{tips}}</p>
+          <a href="javascript:;" class="fgcommit" @click="resetPassword">提交</a>
+       </div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+      tips : '',
+      displayStyle : 'none',
+      switch : false,
+      dataJson : {
+        session_id : localStorage.session_id,
+      }
+    }
+  },
+  methods: {
+    resetPassword : function(){
+      var dataJson = this.dataJson;
+        if( !dataJson.old_password){
+          this.processTips(1,'请输入旧密码');
+          return;
+        }else if( !dataJson.password){
+          this.processTips(1,'请输入新密码');
+          return;
+        }
+        else if( !dataJson.repassword){
+          this.processTips(1,'请输入再次确认的密码');
+          return;
+        }
+        else if( dataJson.password != dataJson.repassword){
+          this.processTips(1,'两次输入的密码不一致，请重新输入');
+          return;
+        }else if( !this.verifyPassword(dataJson.password)){
+          this.processTips(1,'密码格式错误,密码为6-20位的字母和数字的组合');
+          return;
+        }else{
+          this.$http.post('/Shop/Agent/resetPassword', this.dataJson,{emulateJSON:true}).then(function(response){
+            var returnData = response['data'];
+            if( returnData.status == '200000' ){
+              this.$store.commit('alert',{show:true,text:'修改成功'});
+              this.$router.push('/login');
+            }else{
+              this.$store.commit('alert',{show:true,text:returnData.message});
+              this.dataJson = {session_id : localStorage.session_id};
+            }
+          })
+        }
+    },
+    processTips : function(show, tips){
+      if ( show ) {
+        this.tips = tips;
+        this.displayStyle = 'block';
+        this.switch = true;
+      } else {
+        this.displayStyle = 'none';
+        this.switch = false;
+      }
+      if ( this.switch == true ) {
+        setTimeout(this.processTips, 4000);
+      }
+    },
+    verifyPassword : function(password){
+      var reg = /^[A-Za-z0-9]{6,20}$/;
+      if(reg.test(password))
+        return true;
+      return false;
+    }
+  }
+
+}
+</script>
+

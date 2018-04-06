@@ -1,0 +1,211 @@
+<template>
+  	<div class="content" id="cashRecord">
+		<header class="head">
+			<a class="back" href="javascript:window.history.go(-1);"></a>
+			<h1 class="y-confirm-order-h1 cfh">现金流水</h1>
+			<span class="interval" @click="showDate(1)"></span>
+			<a href="javascript:;" class="cfsearch" @click='reShowData'></a>
+		</header>
+		<div class="main">
+			<div class="cflowWrap">
+				<div class="cfwNav">
+					<div class="cfnav">
+						<span @click="toggle('type',-1)" v-if="dataJson.type==-1">全部</span>
+						<span @click="toggle('type',0)" v-if="dataJson.type==0">收入</span>
+						<span @click="toggle('type',1)" v-if="dataJson.type==1">支出</span>
+						<ul v-bind:style="{display:typeStyle}">
+							<li @click="toggle('type',-1)">全部</li>
+							<li @click="toggle('type',0)">收入</li>
+							<li @click="toggle('type',1)">支出</li>
+						</ul>
+					</div>
+					<div class="cfnav">
+						<span @click="toggle('event',-1)" v-if="dataJson.event_type == -1">事由</span>
+						<span @click="toggle('event',0)" v-if="dataJson.event_type == 0">订单收入</span>
+						<span @click="toggle('event',1)" v-if="dataJson.event_type == 1">提现支出</span>
+						<span @click="toggle('event',2)" v-if="dataJson.event_type == 2">退货支出</span>
+						<ul v-bind:style="{display:eventStyle}">
+							<li @click="toggle('event',-1)">事由</li>
+							<li @click="toggle('event',0)">订单收入</li>
+							<li @click="toggle('event',1)">提现支出</li>
+							<li @click="toggle('event',2)">退货支出</li>
+						</ul>
+					</div>
+				</div>
+				<div class="cfwCont">
+					<table class="cfwctable">
+						<tbody>
+							<tr>
+								<th>流水号</th>
+								<th>事由</th>
+								<th>金额</th>
+								<th>手续费</th>
+							</tr>
+							<tr v-for="item in list">
+								<td>{{item.serial_number}}</td>
+								<td v-if="item.event_type == 0">订单收入</td>
+								<td v-if="item.event_type == 1">提现支出</td>
+								<td v-if="item.event_type == 2">退货支出</td>
+								<td class="add" v-if="item.type == 0">+{{item.money}}</td>
+								<td class="reduce" v-if="item.type == 1">-{{item.money}}</td>
+                <td class="reduce" v-if="item.event_type == 0">{{item.poundage}}</td>
+								<td class="reduce" v-else>-</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="cfmask" v-bind:style="{display:maskStyle}"></div>
+			<!-- 筛选区间 -->
+	        <div class="scrIntWrap" v-bind:style="{display:dateStyle}">
+	            <header class="head">
+	              <span class="back" @click="showDate(0)"></span>
+	              <h1 class="y-confirm-order-h1">筛选区间</h1>
+	              <span class="close" @click="showDate(0)"></span>
+	            </header>
+	            <div class="scrIntCont">
+	                <div class="strList">
+	                    <span>起始日期</span>
+	                    <input id="startTime" type="date" name="" v-model="dataJson.startTime" >
+	                </div>
+	                <div class="strList">
+	                    <span>结束日期</span>
+	                    <input id="endTime" type="date" name="" v-model="dataJson.endTime">
+	                </div>
+	                <a href="javascript:;" class="strbtn" @click="submitData" >确定</a>
+	            </div>   
+	        </div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    eventStyle : 'none',
+    typeStyle : 'none',
+    maskStyle : 'none',
+    dateStyle : 'none',
+    type_onOff : false,
+    event_onOff : false,
+    list : '',
+    dataJson : {
+      	session_id : localStorage.session_id,
+      	type : '-1',
+      	event_type : '-1',
+      	startTime : '',
+      	endTime : '',
+        page : 0,
+      },
+    loadData : true,
+    nomore : false,
+    }
+  },
+  created(){
+    this.$store.commit('loading',{show:true,text:'加载中...'});
+  	this.showData();
+  },
+  mounted(){
+    this.$store.commit('loading',{show:true});
+    this.loadMore();
+  },
+  methods: {
+  	showData : function(){
+      this.dateStyle = 'none';
+  		var that = this.dataJson; 
+      if( this.loadData == true){
+        this.loadData = false;
+        that.page++;
+        this.$http.post('/Shop/Finance/cashRecord', that,{emulateJSON:true}).then(function(response){
+          console.log(response.data);
+          var returnData = response['data'];
+          if ( returnData['data']['list'].length ) {
+              this.list = ( this.list.length ) ? this.list.concat(returnData['data']['list']) : returnData['data']['list'];
+              // console.log(this.list);
+          }else {
+              if ( this.list.length ) {
+                  this.nomore = true;
+              }
+          } 
+          this.$nextTick(function () {
+              this.loadData = true;
+              this.$store.commit('loading',{show:false});
+          })
+        })
+      }
+  	},
+    reShowData : function(){
+      var that = this.dataJson;
+      that.page = 0;
+      this.list = '';
+      ( !that.startTime) ? that.startTime='' : that.startTime = this.formatStamp(this.dataJson.startTime);
+      ( !that.endTime) ? that.endTime='' : that.endTime = this.formatStamp(this.dataJson.endTime);
+      this.showData();
+    },
+    loadMore(){
+      var that = this;
+      that.$store.commit('scrollFun',{dom:'cashRecord', auto:true, bottomCall:function(){  
+          if ( that.nomore == false ) {
+              that.showData();
+          }
+      }})
+    },
+  	//转化为时间戳
+    formatStamp(time){
+      var timeStamp = Date.parse(new Date(time));
+      return timeStamp/1000;
+    },
+    submitData : function(){
+      var startTime = document.getElementById('startTime').value;
+      var endTime = document.getElementById('endTime').value;
+      if(!startTime || !endTime){
+        this.$store.commit('alert',{show:true,text:'请选择完整的日期时间'});
+        return;
+      }
+      this.showData();
+    },
+    toggle : function(what,status){
+      if(what == 'type'){
+        this.type_onOff = !this.type_onOff;
+        this.type_onOff == true ? this.open(what,status) : this.close(what,status);
+      }else{
+        this.event_onOff = !this.event_onOff;
+        this.event_onOff == true ? this.open(what,status) : this.close(what,status);
+      }
+      
+    },
+    open : function(what,status){
+      this.maskStyle = 'block';
+      if(what == 'type'){
+        this.typeStyle = 'block';
+        this.dataJson.type = status;
+      }else{
+        this.eventStyle = 'block';
+        this.dataJson.event_type = status;
+      }
+    },
+    close : function(what,status){
+      this.maskStyle = 'none';
+      if(what == 'type'){
+        this.typeStyle = 'none';
+        this.dataJson.type = status;
+      }
+      else{
+        this.eventStyle = 'none';
+        this.dataJson.event_type = status;
+      }
+    },
+    showDate : function(is_show){
+      if(is_show)
+        this.dateStyle = 'block';
+      else{
+        this.dateStyle = 'none';
+      }
+    },
+    
+  }
+
+}
+</script>
+

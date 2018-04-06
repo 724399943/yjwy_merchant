@@ -1,0 +1,170 @@
+<template>
+  	<div class="content">
+  		  <div class="index_wrap">
+            <div class="indhead">
+                <router-link to="/shopInfo" ><span class="hsname">{{agentName}}</span></router-link>
+                <span class="interval" @click="showDate(1)"></span>
+            </div>  
+            <div class="indCont">
+                <div class="yindConttop">
+                    <span>店铺应收</span>
+                    <span class="time">{{dataJson.startTime|time}} - {{dataJson.endTime|time}}</span>
+                </div>
+                <p class="money">￥ <span>{{intAccount}}</span>.{{floatAccount}}</p>
+                <div class="yindMoney">
+                    <div class="indmList">
+                        <div class="indml">
+                            <p class="idm">{{list.orderTotal}}</p>
+                            <p>订单金额</p>
+                        </div>
+                        <div class="indmline">
+                            <em></em>
+                        </div>
+                        <div class="indml">
+                            <p class="idm">{{list.commissionTotal}}</p>
+                            <p>收取佣金</p>
+                        </div>
+                    </div>
+                    <div class="indmList">
+                        <div class="indml">
+                            <p class="idm">{{list.chargebaclTotal}}</p>
+                            <p>退单金额</p>
+                        </div>
+                        <div class="indmline">
+                            <em></em>
+                        </div>
+                        <div class="indml">
+                            <p class="idm">{{list.chargebackCommissionTotal}}</p>
+                            <p>退单佣金</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="ysimoney">
+                    <p class="ysm">3000.00</p>
+                    <p>手续费</p>
+                </div>
+            </div>
+        </div>		
+        <!-- 筛选区间 -->
+        <div class="scrIntWrap" v-bind:style="{display:displayStyle}">
+            <header class="head">
+              <span class="back" @click="showDate(0)"></span>
+              <h1 class="y-confirm-order-h1">筛选区间</h1>
+              <span class="close" @click="showDate(0)"></span>
+            </header>
+            <div class="scrIntCont">
+                <div class="strList">
+                    <span>起始日期</span>
+                    <input id="startTime" type="date" name="" v-model="dataJson.startTime">
+                </div>
+                <div class="strList">
+                    <span>结束日期</span>
+                    <input id="endTime" type="date" name="" v-model="dataJson.endTime" >
+                </div>
+                <a href="javascript:;" class="strbtn" @click="submitData">确定</a>
+            </div>   
+        </div>
+  	</div>
+</template>
+<script>
+
+export default {
+
+  data () {
+    return {
+      displayStyle : 'none',
+      intAccount : '',
+      floatAccount : '00',
+      list : [],
+      initDate : [],
+      agentName : '',
+      dataJson : {
+        session_id : localStorage.session_id,
+      },
+    }
+  },
+  components : {
+   
+  },
+  created(){
+    this.getMoney();
+  },
+  methods: {
+    getMoney(){
+      this.displayStyle = 'none';
+      this.getAgentName();
+      //初始化时间
+      if(!this.dataJson.startTime && !this.dataJson.endTime){
+        this.dataJson.startTime = new Date().getTime();
+        this.dataJson.endTime = new Date().getTime() + 24*60*60*1000;
+      }
+      //转化为时间戳
+      this.dataJson.startTime = this.formatStamp(this.dataJson.startTime);
+      this.dataJson.endTime = this.formatStamp(this.dataJson.endTime);
+      this.$http.post('/Shop/Agent/index', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.list = returnData['data'];
+                // 分割总收入的整数和小数部分
+                var account = this.returnFloat(this.list.merchantAccount);
+                var merchantAccount = account.split('.');
+                this.intAccount = merchantAccount[0];
+                this.floatAccount = merchantAccount[1];
+              }
+              else{
+                // this.$store.commit('alert',{show:true,text:returnData.message});
+              }    
+          })
+    },
+    getAgentName(){
+        this.$http.post('/Shop/Agent/agentInfo', this.dataJson,{emulateJSON:true}).then(function(response){ 
+             var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.agentName = returnData['data']['list']['agent_name']; 
+              }
+              else{
+                // this.$store.commit('alert',{show:true,text:returnData.message});
+              } 
+          })
+    },
+    showDate : function(is_show){
+      if(is_show){
+        this.displayStyle = 'block';
+      }
+      else{
+        this.displayStyle = 'none';
+      }
+    },
+    //转化为时间戳
+    formatStamp(time){
+      var timeStamp = Date.parse(new Date(time));
+      return timeStamp/1000;
+    },
+    submitData : function(){
+      var startTime = document.getElementById('startTime').value;
+      var endTime = document.getElementById('endTime').value;
+      if(!startTime || !endTime){
+        this.$store.commit('alert',{show:true,text:'请选择完整的日期时间'});
+        return;
+      }
+      this.getMoney();
+    },
+    returnFloat(value){
+      var value = Math.round(parseFloat(value)*100)/100;
+      var xsd = value.toString().split(".");
+       if(xsd.length==1){
+         value=value.toString()+".00";
+         return value;
+       }
+       if(xsd.length>1){
+         if(xsd[1].length<2){
+          value=value.toString()+"0";
+         }
+       return value;
+       }
+      },
+  }
+
+}
+</script>
+

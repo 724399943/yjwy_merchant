@@ -1,0 +1,63 @@
+<template>
+  	<div class="content">
+		<header class="head">
+			<!-- <router-link :to="{name: 'editOrder',params:{order_sn:order_sn,total :total}}"> -->
+				<a class="back" href="javascript:window.history.go(-1);"></a>
+			<h1 class="y-confirm-order-h1">卖家备注</h1>
+		</header>
+		<div class="main">
+			<div class="sellRem">
+				<div class="sell_text">
+					<textarea placeholder="请输入您的意见" class="fkui" v-model="dataJson.merchant_remark"></textarea>
+				</div>
+				<a href="javascript:;" class="widup" @click="submitData">保存</a>
+			</div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+      // order_sn : '',
+      // total : '',
+      dataJson : {
+      	session_id : localStorage.session_id,
+        merchant_remark : '',
+        order_sn : ( this.$route.query.order_sn ) ? this.$route.query.order_sn : '',
+        total : ( this.$route.query.total ) ? this.$route.query.total : '',
+      }
+    }
+  },
+  created(){
+  	this.showData();
+  },
+  methods: {
+    showData : function(){
+    	this.$http.post('/Shop/Order/merchantOrderDetail', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.dataJson.merchant_remark = returnData['data']['orderData']['merchant_remark'];
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }   
+          });
+    },
+    submitData : function(){
+    	this.$http.post('/Shop/Order/editMerchantRemark', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.$router.push({name : 'orderDetail',query:{order_sn:this.dataJson.order_sn}});
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }    
+          });
+    },
+  }
+
+}
+</script>
+

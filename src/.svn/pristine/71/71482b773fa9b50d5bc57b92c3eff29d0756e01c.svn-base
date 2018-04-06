@@ -1,0 +1,168 @@
+<template>
+  	<div class="content" id="list">
+		<!-- <div class="main"> -->
+			<div class="mmbalanceWrap">
+				<div class="mbhtop">
+					<header class="head">
+						<a class="back" href="javascript:window.history.go(-1);"></a>
+						<h1 class="y-confirm-order-h1">我的余额</h1>
+						<router-link to="/withdraw" class="oltxt">申请提现</router-link>
+					</header>
+					<div class="mblcTop">
+						<div class="money">￥ <span>{{money}}</span> .00</div>
+						<p class="title">账户余额</p>
+					</div>
+				</div>
+				<div class="mmbalcCont">
+					<div class="mblcNav">
+						<span @click="change(0)" v-bind:class="onStyle1">收入明细</span>
+						<span @click="change(1)" v-bind:class="onStyle2">提现明细</span>
+					</div>
+					<div class="set_d_list" >
+						<ul >
+							<li v-for="v in incomeList" v-if="onStyle1 == 'on'" >
+								<div class="lf">
+									<p class="tt">订单号：{{v.order_sn}}</p>
+									<p class="time">{{v.add_time|time}}</p>                
+								</div>
+								
+				              <div class="rg" >  
+				                  <span class="on">+{{v.money}}</span>
+				              </div>
+				             
+							</li>
+							<li v-for="vo in withdrawList" v-if="onStyle2 == 'on'">
+								<div class="lf">
+									<p class="tt" v-if="vo.status == 0">取现 (待处理)</p>
+									<p class="tt" v-if="vo.status == 1">取现 (已处理)</p>
+									<p class="tt" v-if="vo.status == 2">取现 (已拒绝)</p>
+									<p class="time">{{vo.add_time | time}}</p>                
+								</div>
+					              <div class="rg">  
+					                  <span>-{{vo.money}}</span>
+					              </div>
+							</li>						
+						</ul>
+					</div>
+				</div>
+			</div>
+		<!-- </div> -->
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    	onStyle1 : 'on',
+    	onStyle2 : '',
+    	incomeList : [],
+    	withdrawList : [],
+    	money : 0,
+      dataJson : {
+      	session_id : localStorage.session_id,
+      	incomePage : 0,
+      	withdrawPage : 0,
+      },
+      	nomore : false,
+      	nomore2 : false,
+      	loadData :true,
+      	loadData2 :true,
+    }
+  },
+  created(){
+  	this.$store.commit('loading',{show:true,text:'加载中...'});
+  	this.showIncome();
+  	// this.showWithdraw();
+  },
+  mounted(){
+    this.$store.commit('loading',{show:true});
+    this.incomeLoadMore();
+    this.withdrawLoadMore();
+  },
+  methods: {
+    showIncome : function(){
+    	var that = this;
+    	if( that.loadData == true){
+    		that.loadData = false;
+    		that.dataJson.incomePage++;
+	    	that.$http.post('/Shop/Finance/moneyLog', {page : this.dataJson.incomePage},{emulateJSON:true}).then(function(response){
+	  			var incomeData = response['data'];
+	  			if( incomeData['data']['list'].length ){
+	  				that.incomeList = (that.incomeList.length) ? that.incomeList.concat(incomeData['data']['list']) : incomeData['data']['list'];
+	  			}else{
+	  				if( that.incomeList.length ){
+	  					that.nomore = true;
+	  				}
+	  			}
+	  			this.money = incomeData['data']['money'];
+	  			that.$nextTick(function () {
+	  			    that.loadData = true;
+	  			    this.$store.commit('loading',{show:false});
+	  			})
+	  		});
+    	}
+    },
+    showWithdraw : function(){
+    	var that = this;
+    	if( that.loadData2 == true){
+    		that.loadData2 = false;
+    		that.dataJson.withdrawPage++;
+		  	this.$http.post('/Shop/Finance/withdrawLog', {page : this.dataJson.withdrawPage},{emulateJSON:true}).then(function(response){
+				var withdrawData = response['data'];
+				if( withdrawData['data']['list'].length ){
+					that.withdrawList = (that.withdrawList.length) ? that.withdrawList.concat(withdrawData['data']['list']) : withdrawData['data']['list'];
+				}else{
+					if( that.withdrawList.length ){
+	  					that.nomore2 = true;
+	  				}
+				}
+				that.$nextTick(function () {
+	  			    that.loadData2 = true;
+	  			    this.$store.commit('loading',{show:false});
+	  			})
+			})
+    	}
+
+    },
+    incomeLoadMore(){
+    	var that = this;
+    	that.$store.commit('scrollFun',{dom:'list',auto:true,bottomCall:function(){
+		    if ( that.nomore == false ) {
+		        that.showIncome();
+    		}
+    	}})
+    },
+    withdrawLoadMore(){
+    	var that = this;
+    	that.$store.commit('scrollFun',{dom:'list',auto:true,bottomCall:function(){
+		    if ( that.nomore2 == false ) {
+		        that.showWithdraw();
+    		}
+    	}})
+    },
+    change : function(which){
+    	this.incomeList = [];
+    	this.withdrawList = [];
+    	this.dataJson.incomePage = 0;
+    	this.dataJson.withdrawPage = 0;
+    	this.nomore = this.nomore = false;
+    	
+
+    	if(!which){//收入明细
+    		// this.loadData = true;
+    		this.showIncome();
+    		this.onStyle1 = 'on';
+    		this.onStyle2 = '';
+    	}else{//提现明细
+    		// this.loadData2 = true;
+    		this.showWithdraw();
+    		this.onStyle1 = '';
+    		this.onStyle2 = 'on';
+    	}
+    }
+  }
+
+}
+</script>
+

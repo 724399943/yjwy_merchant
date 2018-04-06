@@ -1,0 +1,97 @@
+<template>
+  	<div class="content">
+		<header class="head">
+			<router-link :to="{name:'goodsDetail',params:{goods_id : dataJson.goods_id}}">
+				<a class="back"></a>
+			</router-link>
+			<h1 class="y-confirm-order-h1">编辑商品</h1>
+		</header>
+		<div class="main">
+			<div class="editGoodsWrap">
+				<div class="goods_jgkc">
+					<div class="ggjkcTab">
+						<span>颜色</span>
+						<span>规格</span>
+						<span>价格</span>
+						<span>库存</span>
+					</div>
+					<div class="ggjkcTab" v-for="(item,index) in attrList">
+						<span>{{item.attr.color}}</span>
+						<span>{{item.attr.size}}</span>
+						<input type="text" name=""  :value="item.goods_price" v-model="attrList[index].goods_price"/>
+						<input type="text" name="" :value="item.goods_number" v-model="attrList[index].goods_number"/>
+					</div>
+					
+				</div>	
+			</div>
+			<a href="javascript:;" class="editgbtn" @click="editData">保存</a>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+        attrList : [],
+        requestJson : {
+      	 session_id : localStorage.session_id,
+        },
+        dataJson : {
+      	 session_id : localStorage.session_id,
+        },
+    }
+  },
+  created(){
+  	// this.showData();
+  	this.showAttr();
+  },
+  methods: {
+    editData : function(){
+    	var that = this.dataJson;
+    	that.goods_id = this.$route.params.goods_id;
+    	
+    	for(var i=0; i<this.attrList.length; i++){
+    		that.goods_number = this.attrList[i].goods_number;
+    		that.goods_price = this.attrList[i].goods_price;
+    		that.id = this.attrList[i].id;
+    		//过滤
+    		if( !this.verifyNumber(that.goods_number) || !this.verifyNumber(that.goods_price)){
+    			this.$store.commit('alert',{show:true,text:"请输入正确的数字"});
+    			return;
+    		}else{
+	    		this.$http.post('/Shop/Goods/editGoods', that,{emulateJSON:true}).then(function(response){
+	    			var returnData = response['data'];
+	    			if(returnData.status == '200000'){
+	    				this.$router.push({name:'goodsDetail',params:{goods_id : that.goods_id}});
+	    			}else{
+	    				this.$store.commit('alert',{show:true,text:returnData.message});
+	    				that = {};
+	    			}
+	    			
+	    		});
+    		}
+    	}
+    },
+    showAttr : function(){
+  		var that = this.dataJson;
+  		that.goods_id = this.$route.params.goods_id;
+		this.$http.post('/Shop/Goods/agentGoodsDetail', that,{emulateJSON:true}).then(function(response){
+			var returnData = response['data'];
+			if(returnData.status == '200000'){
+				this.attrList = returnData['data']['goodsInfo'];
+			}
+			
+		});
+  	},
+  	verifyNumber(string){
+  		var reg = /^\d+(?=\.{0,1}\d+$|$)/
+  		  if(reg.test(string)) return true;
+  		  return false ;  
+  		
+  	}
+  }
+
+}
+</script>
+

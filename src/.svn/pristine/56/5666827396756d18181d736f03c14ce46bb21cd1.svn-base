@@ -1,0 +1,297 @@
+<template>
+  	<div class="content" id="orderList">
+		<header class="head">
+			<span class="osear" @click="reOrderList"></span>
+			<h1 class="y-confirm-order-h1">订单列表</h1>
+			<span class="interval" @click="showDate"></span>
+		</header>
+		<div class="main">
+			<div class="orderList">
+				<div class="order_nav">
+					<div class="o_nav" >
+						<span @click="toggle('status',-1,1)"  v-if="dataJson.status==-1">订单类型</span>
+						<span @click="toggle('status',7)"  v-if="dataJson.status==7">待接单</span>
+						<span @click="toggle('status',8)"  v-if="dataJson.status==8">待生产</span>
+						<span @click="toggle('status',1)"  v-if="dataJson.status==1">生产中</span>
+						<span @click="toggle('status',2)"  v-if="dataJson.status==2">待收货</span>
+						<span @click="toggle('status',3)"  v-if="dataJson.status==3">待评价</span>
+						<span @click="toggle('status',4)"  v-if="dataJson.status==4">已完成</span>
+						<span @click="toggle('status',5)"  v-if="dataJson.status==5">已取消</span>
+						<i></i>
+						<ul class="onav_ul" v-bind:style="{display:statusStyle}">
+							<li @click="toggle('status',-1)">全部</li>
+							<li @click="toggle('status',7)">待接单</li>
+							<li @click="toggle('status',8)">待生产</li>
+							<li @click="toggle('status',1)">生产中</li>
+							<li @click="toggle('status',2)">待收货</li>
+							<li @click="toggle('status',3)">待评价</li>
+							<li @click="toggle('status',4)">已完成</li>
+							<li @click="toggle('status',5)">已取消</li>
+						</ul>
+					</div>
+					<div class="o_nav" style="left:33.3%">
+						<span @click="toggle('type',-1)" v-if="dataJson.order_type==-1">商品类型</span>
+						<span @click="toggle('type',0)" v-if="dataJson.order_type==0">成品</span>
+						<span @click="toggle('type',1)" v-if="dataJson.order_type==1">非标商品</span>
+						
+						<i></i>
+						<ul class="onav_ul" v-bind:style="{display:typeStyle}">
+							<li @click="toggle('type',-1)">全部</li>
+							<li @click="toggle('type',0)">成品</li>
+							<li @click="toggle('type',1)">非标商品</li>							
+						</ul>
+					</div>
+					<div class="o_nav" style="left:66.6%">
+						<span @click="toggle('is_remind',-1)" v-if="dataJson.is_remind==-1" >催单状态</span>
+						<span @click="toggle('is_remind',0)" v-if="dataJson.is_remind==0" >未催单</span>
+						<span @click="toggle('is_remind',1)" v-if="dataJson.is_remind==1" >已催单</span>
+						<i></i>
+						<ul class="onav_ul" v-bind:style="{display:remindStyle}">
+							
+							<li @click="toggle('is_remind',-1)">催单状态</li>
+							<li @click="toggle('is_remind',1)">已催单</li>
+							<li @click="toggle('is_remind',0)">未催单</li>							
+						</ul>
+					</div>
+				</div>
+				<div class="order_cont">
+					<ul class="odlist" v-for="order in list">
+						
+						<li>
+						<router-link :to="{name: 'orderDetail',query:{order_sn:order.order_sn}}">
+							<div class="odlsn">
+								<p>订单号：{{order.order_sn}}</p>
+								<span v-if="order.status==0">待支付</span>
+								<span v-else-if="order.status==1">生产中</span>
+								<span v-else-if="order.status==2">待收货</span>
+								<span v-else-if="order.status==3">待评价</span>
+								<span v-else-if="order.status==4">已完成</span>
+								<span v-else-if="order.status==5">已取消</span>
+								<span v-else-if="order.status==6">退换货</span>
+								<span v-else-if="order.status==7">待接单</span>
+								<span v-else-if="order.status==8">待生产</span>
+							</div>
+							<div class="odlmsg">
+								<div class="oduser">
+									<div class="imgbox">
+										<img v-bind:src="order.headimgurl">
+									</div>
+									<p>{{order.nickname}}</p>
+								</div>
+								<div class="oddtext">
+									<div class="odtxt">
+										<span>订单金额：{{order.total}}</span>
+										<p><em>实付金额：</em>{{order.real_pay}}</p>
+									</div>
+									<div class="odtxt">
+										<span>数量：{{order.goods_number}}</span>
+										<p v-if="order.is_remind == 1">已催单</p>
+									</div>
+								</div>
+							</div>
+							</router-link>
+							<div class="odlwow">
+								<div class="owowl">{{order.add_time | time}}</div>
+								<a href="javascript:;" class="wowbtn" v-if="order.status==1" @click="editOrderStatus(order.status,order.order_sn)">发货</a>
+								<a href="javascript:;" class="wowbtn" v-if="order.status==8"  @click="editOrderStatus(order.status,order.order_sn)">生产</a>
+								<a href="javascript:;" class="wowbtn" v-if="order.status==7" @click="editOrderStatus(order.status,order.order_sn)">接单</a>
+							</div>
+						</li>
+						
+					</ul>
+				</div>
+			</div>
+			<!-- 筛选区间 -->
+	        <div class="scrIntWrap" v-bind:style="{display:dateStyle}">
+	            <header class="head">
+	              <span class="back" @click="showDate(0)"></span>
+	              <h1 class="y-confirm-order-h1">筛选区间</h1>
+	              <span class="close" @click="showDate(0)"></span>
+	            </header>
+	            <div class="scrIntCont">
+	                <div class="strList">
+	                    <span>起始日期</span>
+	                    <input id="startTime" type="date" name="" v-model="dataJson.startTime">
+	                </div>
+	                <div class="strList">
+	                    <span>结束日期</span>
+	                    <input id="endTime" type="date" name="" v-model="dataJson.endTime" >
+	                </div>
+	                <a href="javascript:;" class="strbtn" @click="submitData">确定</a>
+	            </div>   
+	        </div>	
+	        <div class="olmask" v-if="onmask == 1"></div>		
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    	dateStyle : 'none',
+    	statusStyle : 'none',
+    	typeStyle : 'none',
+    	remindStyle : 'none',
+    	orderStatus : -1,
+    	goodsType : -1,
+    	is_remind : -1,
+    	status_onOff : false,//订单类型开关
+    	type_onOff : false,//商品类型开关
+    	remind_onOff : false,//催单状态开关
+    	list : [],
+    	user : [],
+      dataJson : {
+      	session_id : localStorage.session_id,
+      	status : '-1',
+      	order_type : '-1',
+      	is_remind : '-1',
+      	page : 0,
+      },
+      infoJson : {
+      	session_id : localStorage.session_id,
+      },
+      loadData : true,
+      nomore : false,
+      onmask : 0
+    }
+  },
+  created(){
+  	this.$store.commit('loading',{show:true,text:'加载中...'});
+  	this.orderList();
+  },
+  mounted(){
+  	this.$store.commit('loading',{show:true});
+    this.loadMore();
+  },
+  components : {
+
+  },
+  methods: {
+  	editOrderStatus : function(status,order_sn){
+  		this.infoJson.status = status;
+  		this.infoJson.order_sn = order_sn;
+	  	this.$http.post('/Shop/Order/editOrderStatus', this.infoJson,{emulateJSON:true}).then(function(response){
+				var returnData = response['data'];
+				if( returnData.status == '200000' ){
+					this.$store.commit('alert',{show:true,text:returnData.message});
+					this.reOrderList();
+				}else{
+					this.$store.commit('alert',{show:true,text:returnData.message});
+				}
+			})
+  	},
+    orderList : function(){
+    	var that = this;
+    	if( that.loadData == true){
+    		that.loadData = false;
+    		that.dataJson.page++;
+		  	this.$http.post('/Shop/Order/merchantOrder', that.dataJson,{emulateJSON:true}).then(function(response){
+					var returnData = response['data'];
+					if( returnData['data']['list'].length ){
+						console.log(returnData);
+						that.list = ( that.list.length ) ? that.list.concat(returnData['data']['list']) : returnData['data']['list'];
+						this.user = returnData['data']['user'];
+					}else {
+		                  if ( that.list.length ) {
+		                      that.nomore = true;
+		                  }
+		            }
+					that.$nextTick(function () {
+					    that.loadData = true;
+					    this.$store.commit('loading',{show:false});
+					})
+				})
+    	}
+    },
+    submitData : function(){
+      var startTime = document.getElementById('startTime').value;
+      var endTime = document.getElementById('endTime').value;
+      if(!startTime || !endTime){
+        this.$store.commit('alert',{show:true,text:'请选择完整的日期时间'});
+        return;
+      }
+      this.reOrderList();
+    },
+    reOrderList : function(){
+    	this.dateStyle = 'none';
+    	this.dataJson.startTime = this.formatStamp(this.dataJson.startTime);
+      	this.dataJson.endTime = this.formatStamp(this.dataJson.endTime);
+      	if(!this.dataJson.startTime)
+      		this.dataJson.startTime = '';
+      	if(!this.dataJson.endTime)
+      		this.dataJson.endTime = '';
+    	this.dataJson.page = 0;
+  		this.nomore = false;
+  		this.list = [];
+  		this.orderList();
+    },
+    loadMore(){
+    	var that = this;
+    	that.$store.commit('scrollFun',{dom:'orderList', auto:true, bottomCall:function(){  
+    	    if ( that.nomore == false ) {
+    	        that.orderList();
+    	    }
+    	}})
+    },
+    showDate : function(is_show){
+      if(is_show){
+        this.dateStyle = 'block';
+      }
+      else{
+        this.dateStyle = 'none';
+      }
+    },
+    toggle : function(what,status,request){
+  		if(what == 'status'){
+	        this.status_onOff = !this.status_onOff;
+	        this.status_onOff == true ? this.open(what,status) : this.close(what,status);
+	    }else if(what == 'type'){
+	        this.type_onOff = !this.type_onOff;
+	        this.type_onOff == true ? this.open(what,status) : this.close(what,status);
+	    }else if(what == 'is_remind'){
+	    	this.remind_onOff = !this.remind_onOff;
+	        this.remind_onOff == true ? this.open(what,status) : this.close(what,status);
+	    }
+  		if ( !request ) 
+  			this.reOrderList();
+  		
+  	},
+  	open : function(what,status){
+  		this.onmask = 1;
+  		if(what == 'status'){
+  			this.statusStyle = 'block';
+  			this.dataJson.status = status;
+  		}else if(what == 'type'){
+  			this.typeStyle = 'block';
+  			this.dataJson.order_type = status;
+  		}
+  		else{
+  			this.remindStyle = 'block';
+  			this.dataJson.is_remind = status;
+  		}
+  	},
+  	close : function(what,status){
+  		this.onmask = 0;
+  		if(what == 'status'){
+  			this.statusStyle = 'none';
+  			this.dataJson.status = status;
+  		}else if(what == 'type'){
+  			this.typeStyle = 'none';
+  			this.dataJson.order_type = status;
+  		}
+  		else{
+  			this.remindStyle = 'none';
+  			this.dataJson.is_remind = status;
+  		}
+  	},
+    //转化为时间戳
+    formatStamp(time){
+      var timeStamp = Date.parse(new Date(time));
+      return timeStamp/1000;
+    },
+  }
+
+}
+</script>
+

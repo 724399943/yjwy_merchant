@@ -1,0 +1,189 @@
+<template>
+  	<div class="content">
+		<header class="head">
+		<router-link :to="{name: 'orderList'}">
+			<a class="back" href=""></a>
+		</router-link>
+			<h1 class="y-confirm-order-h1">订单详情</h1>
+			<router-link :to="{name: 'editOrder',query:{order_sn:dataJson.order_sn,total:dataJson.total}}" class="oltxt">编辑订单</router-link>
+		</header>
+		<div class="main">
+			<div class="edordWrap">
+				<div class="edomsg" v-for="item in goodsData">
+					<h1>商品信息</h1>
+					<div class="in-goods">
+                        <div class="imgbox">
+                            <img :src="item.goods_image">
+                        </div>
+                        <div class="ingmsg">
+                            <p class="name db-overflow">{{item.goods_name}}</p>
+                            <div class="invattr">
+                                <span>{{item.attr_list}}</span>
+                                <span v-if="item.is_install == 1">上门安装</span>
+                            </div>
+                            <div class="invpn">
+                                <span class="price">￥{{item.price}}</span>
+                                <span class="num">x{{item.goods_number}}</span>
+                            </div>
+                        </div>                        
+                    </div>
+				</div>
+				<div class="edomsg">
+					<h1>订单信息</h1>
+					<div class="omsg">
+						<div class="ordermsn">
+							<p>订单号：{{orderData.order_sn}}</p>
+							<span v-if="orderData.status==0">待支付</span>
+							<span v-if="orderData.status==1">待发货</span>
+							<span v-if="orderData.status==2">待收货</span>
+							<span v-if="orderData.status==3">待评价</span>
+							<span v-if="orderData.status==4">已完成</span>
+							<span v-if="orderData.status==5">已取消</span>
+							<span v-if="orderData.status==6">退换货</span>
+							<span v-if="orderData.status==7">待接单</span>
+							<span v-if="orderData.status==8">待生产</span>
+						</div>
+						<div class="ookinline">
+							<p>订单金额</p>
+							<span>￥{{orderData.total}}</span>
+						</div>
+						<div class="ookinline">
+							<p>优惠金额</p>
+							<span>￥{{orderData.coupon_total}}</span>
+						</div>
+						<div class="ookinline">
+							<p>运费</p>
+							<span>￥{{orderData.freight}}</span>
+						</div>
+				
+						<div class="ookinline">
+							<p>实付金额</p>
+							<span>￥{{orderData.real_pay}}</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="edomsg">
+					<h1>订单进度</h1>
+					<div class="odlmsg">
+						<div class="omls">
+							<span>下单时间</span>
+							<p v-if="orderData.pay_time !== '0'">{{orderData.pay_time | time}}</p>
+							<p v-else>-</p>
+						</div>
+						<div class="omls">
+							<span>发货时间</span>
+							<p v-if="orderData.delivery_time !== '0'">{{orderData.delivery_time | time}}</p>
+							<p v-else>-</p>
+						</div>
+						<div class="omls">
+							<span>收货时间</span>
+							<p  v-if="orderData.received_time !== '0'">{{orderData.received_time | time}}</p>
+							<p v-else>-</p>
+						</div>
+						
+					</div>
+				</div>
+				<div class="edomsg">
+					<h1>用户信息</h1>
+					<div class="odlmsg">
+						<div class="omls">
+							<span>用户名</span>
+							<p>{{userData.nickname}}</p>
+						</div>
+						<div class="omls">
+							<span>手机号</span>
+							<p>{{userData.phone}}</p>
+						</div>
+					</div>
+				</div>
+				<div class="edomsg">
+					<h1>支付信息</h1>
+					<div class="odlmsg">
+						<div class="omls">
+							<span>支付时间</span>
+							<p>{{orderData.pay_time | time}}</p>
+						</div>
+						<div class="omls">
+							<span>支付流水号</span>
+							<p>1954422577452615</p>
+						</div>
+						<div class="omls">
+							<span>支付方式</span>
+							<p v-if="orderData.pay_type==0">支付宝</p>
+							<p v-if="orderData.pay_type==1">微信</p>
+							<p v-if="orderData.pay_type==1">银联</p>
+						</div>
+						<div class="omls">
+							<span>支付金额</span>
+							<p>{{orderData.total}}</p>
+						</div>
+					</div>
+				</div>
+				<div class="edomsg">
+					<div class="edmadTop">
+						<span>配送信息</span>
+					</div>
+					<a href="javascript:;" class="y-consignee-imfo">
+	                    <div class="y-line1 clearfix">
+	                      <div class="y-name"><em>{{orderData.consignee}}</em></div>   
+	                      <div class="y-phone">{{orderData.telephone}}</div>
+	                    </div>
+	                    <p class="y-address">{{orderData.province}}{{orderData.city}}{{orderData.country}}{{orderData.address}}</p>
+	                    <i class="y-icon2"></i>
+	                </a>
+				</div>
+				<div class="edomsg">
+					<div class="edmadTop">
+						<span>备注信息</span>					
+					</div>
+					<div class="edmbei">
+						<div class="odbei" v-if="orderData.message != ''">买家备注：{{orderData.message}}</div>
+						<div class="odbei" v-else>买家备注：无备注信息</div>
+						<div class="odbei" v-if="orderData.merchant_remark != ''">卖家备注：{{orderData.merchant_remark}}</div>
+						<div class="odbei" v-else>卖家备注：无备注信息</div>
+					</div>
+				</div>
+			</div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    	orderData : [],
+    	user : [],
+    	userData : [],
+    	goodsData : [],
+      dataJson : {
+      	session_id : localStorage.session_id,
+      }
+    }
+  },
+  created(){
+  	this.getData();
+  },
+  methods: {
+    getData : function(){
+    	this.dataJson.order_sn = this.$route.query.order_sn;
+    	this.$http.post('/Shop/Order/merchantOrderDetail', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.user = returnData['data']['user'];
+                this.orderData = returnData['data']['orderData'];
+                this.goodsData = returnData['data']['goodsData'];
+                this.userData = returnData['data']['userData'];
+                this.dataJson.total = this.orderData.total;
+                console.log(this.orderData);
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }    
+          })
+    },
+  }
+
+}
+</script>

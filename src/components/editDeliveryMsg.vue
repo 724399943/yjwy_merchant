@@ -1,0 +1,133 @@
+<template>
+  	<div class="content"  id="Jreworp" >
+		<header class="head">
+		<a class="back" href="javascript:window.history.go(-1);"></a>
+			<h1 class="y-confirm-order-h1">编辑配送信息</h1>
+		</header>
+		<div class="main">
+			<div class="edordWrap" >
+				<div class="y-bindphone">
+				<ul>
+					<li>
+						<a href="javascript:;">
+							<span>收货人</span>							
+							<input type="text" name="" v-model="orderData.consignee">
+						</a>
+					</li>
+					<li>
+						<a href="javascript:;">
+							<span>电话</span>							
+							<input type="text" name="" v-model="orderData.telephone">
+						</a>
+					</li>
+					<li id="dizhi">
+						<a href="javascript:;">
+							<span>地址</span>
+							<i></i>
+							<input type="text" name="" readonly="readonly" placeholder="点击选择省市区" class="pcc" id="JLAreaclick">
+						</a>	
+						<input id="JAreavalue"     type="hidden" name="" readonly="" v-model="orderData.area">
+	    				<input id="province"    type="hidden" name="province" v-model="orderData.province"  >
+	    				<input id="city"        type="hidden" name="city" v-model="orderData.city">
+	    				<input id="county"      type="hidden" name="county" v-model="orderData.county">					
+					</li>
+					<li>
+						<a href="javascript:;">
+							<span>详细地址</span>							
+							<input type="text" name="" v-model="orderData.address">
+						</a>
+					</li>					
+				</ul>
+			</div>
+			<a href="javascript:;" class="eopbtn" @click="dataSubmit">确定</a>
+			</div>
+		</div>
+  	</div>
+</template>
+<script>
+import {} from '../assets/js/LArea.js';
+export default {
+
+  data () {
+    return {
+    	orderData : [],
+    	order_sn : '',
+    	total : '',
+      dataJson : {
+      	session_id : localStorage.session_id,
+      },
+      infoJson : {
+      	session_id : localStorage.session_id,
+      	order_sn : ( this.$route.query.order_sn ) ? this.$route.query.order_sn : '',
+        total : ( this.$route.query.total ) ? this.$route.query.total : '',
+      },
+    }
+  },
+  created(){
+  	this.getInfo();
+  },
+  methods: {
+    dataSubmit : function(){
+    	console.log(this.orderData);
+    	this.$http.post('/Shop/Order/editOrderDelivery', this.orderData,{emulateJSON:true}).then(function(response){ 
+             var returnData = response.data;
+             if( returnData['status'] == '200000'){
+             }else{
+             	this.$store.commit('alert',{show:true,text:returnData.message});
+             }
+             this.$router.push({name : 'orderDetail',query:{order_sn:this.infoJson.order_sn,total:this.infoJson.total}});
+        })
+    },
+    getInfo : function(){
+    	this.$http.post('/Shop/Order/merchantOrderDetail',this.infoJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.orderData = returnData['data']['orderData'];
+                this.total = this.orderData.total;
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }
+              this.apifun();    
+        })
+    },
+    apifun(){
+    	// 初始化所在地信息
+		var that = this;
+		var LA = new LArea();
+		LA.init({
+			'trigger': '#JLAreaclick', //触发选择控件的文本框，同时选择完毕后name属性输出到该位置
+			'valueTo': '#JAreavalue', //选择完毕后id属性输出到该位置
+			'keys': {
+				id: 'id',
+				name: 'name'
+			},
+			//绑定数据源相关字段 id对应valueTo的value属性输出 name对应trigger的value属性输出
+			'type': 1, //数据源类型
+			// 'data': LAreaData ,  //数据源
+			'callback': function() {
+				that.orderData['province'] = document.getElementById('province').value
+		        that.orderData['city'] = document.getElementById('city').value
+		        that.orderData['county'] = document.getElementById('county').value
+		        that.orderData['area'] = document.getElementById('JAreavalue').value
+		    }
+		});
+    	document.getElementById('JLAreaclick').setAttribute('placeholder', that.orderData['province'] + ' - ' + that.orderData['city'] + ' - ' + that.orderData['county']);
+    	if( that.orderData['area'] ){
+    		var area = (that.orderData['area'].split(','));
+    		for (var i = 0; i < area.length; i++) {
+    			area[i] = parseInt(area[i]);
+    		}
+    		// console.log(area);
+    		LA.value = area;//控制初始位置，注意：该方法并不会影响到input的value
+    	}
+		
+    }
+  },
+
+}
+</script>
+<style>
+ @import '../assets/css/LArea.css';
+</style>
+

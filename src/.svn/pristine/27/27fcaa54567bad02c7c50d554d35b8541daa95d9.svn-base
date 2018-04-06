@@ -1,0 +1,140 @@
+<template>
+  	<div class="content">		
+		<div class="basicWrap">
+			<div class="basic_top">
+				<header class="head">
+					<a class="back" href="javascript:window.history.go(-1);"></a>
+					<h1 class="y-confirm-order-h1">基本信息</h1>
+				</header>
+				<div class="bhwow">
+					<div class="wow">
+						<div class="imgbox" @click="show(1)">
+							<img v-bind:src="logoSrc">
+						</div>
+					</div>
+					<div class="qrwow" @click="show(0)">
+						<img src="../assets/images/store_icon_QR@2x.png">
+					</div>
+				</div>
+			</div>
+			<ul class="basicCont">
+				<li>
+					<span>店铺名称</span>
+					<p class="st">{{list.agent_name}}</p>
+				</li>
+				<li>
+					<span>店铺等级</span>
+					<p class="st">{{list.level}}</p>
+				</li>
+				<li>
+					<span>店铺编号</span>
+					<p class="st">{{list.id}}</p>
+				</li>
+				<li>
+					<span>账号</span>
+					<p class="st">{{user.nickname}}</p>
+				</li>
+				<li>
+					<span>所在城市</span>
+					<p class="st">{{list.province_name}}{{list.city_name}}</p>
+				</li>
+				<li>
+					<span>详细地址</span>
+					<p class="st">{{list.address}}</p>
+				</li>
+				<li>
+					<span>手机</span>
+					<p class="st">{{list.phone}}</p>
+				</li>
+				<li>
+					<span>电话</span>
+					<p class="st">{{list.agent_phone}}</p>
+				</li>
+				<li>
+					<span>邮箱</span>
+					<p class="st">{{list.email}}</p>
+				</li>
+				<li>
+					<span>备注</span>
+					<p class="st" v-html="list.introduction"></p>
+				</li>
+			</ul>
+		</div>
+		<!-- 弹窗 -->
+		<div class="shInmask" v-bind:style="{display:pop}">
+			<!-- 弹logo -->
+			<div class="shincont" v-bind:style="{display:popLogo}">
+				<div class="close"></div>				
+				<div class="simgwrap" @click="close">
+					<div class="imgbox" >
+						<img v-bind:src="logoSrc" >
+					</div>
+				</div>				
+			</div>
+			<!-- 弹二维码 -->
+			<div class="shincont" v-bind:style="{display:popCode}">
+				<div class="close"></div>	
+				<div class="simgwrap" @click="close">
+					<div class="qrimg">
+						<img v-bind:src="agentQrCode">
+					</div>
+					<p class="qrtips">扫扫上面的二维码，查看我的店铺</p>
+				</div>
+			</div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    	list : [],
+    	user : [],
+    	pop : 'none',
+    	popLogo : 'none',
+    	popCode : 'none',
+    	logoSrc : '',
+    	agentQrCode : '',
+      	dataJson : {
+      		session_id : localStorage.session_id,
+      	}
+    }
+  },
+  created(){
+  	this.agentInfo();
+  },
+  methods: {
+    agentInfo(){
+    	this.$http.post('/Shop/Agent/agentInfo', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+              	console.log(returnData);
+              	this.list = returnData['data']['list'];
+              	this.user = returnData['data']['user'];
+              	this.logoSrc = this.list.logo;
+  			    this.agentQrCode = this.list.agentQrCode;
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:response.data.message});
+              }    
+        })
+    },
+  	show : function(islogo){
+  		if(islogo){
+  			this.pop = 'block';
+    		this.popLogo = 'block';
+    		this.popCode = 'none';
+  		}else{
+  			this.pop = 'block';
+    		this.popCode ="block";
+  		}
+  	},
+  	close : function(){
+  		this.pop = 'none';
+  	}
+  }
+
+}
+</script>
+

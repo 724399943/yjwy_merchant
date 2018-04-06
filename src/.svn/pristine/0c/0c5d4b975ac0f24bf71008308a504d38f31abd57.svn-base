@@ -1,0 +1,110 @@
+<template>
+  	<div class="content">
+		<div class="login_wrap all">
+			<span class="close"></span>
+			<div class="logoBox">
+				<img class="logo" src="../assets/images/register_bg_logo@2x.png">			
+			</div>
+			<form>
+				<div class="login_box">
+					<div class="login_input">
+						<input type="text" name="" placeholder="请输入手机号" v-model="dataJson.account" @input="checkFinish">
+					</div>
+					<div class="login_input">
+						<input id="pwd" type="password" name="" placeholder="请输入密码" v-model="dataJson.password" @input="checkFinish">
+						<em v-bind:class="{on: eyeClass}" @click="showEye"></em>
+					</div>					
+				</div>
+			</form>
+			<!-- 不可点 -->
+			<!-- <a href="javascript:;" class="login_btn nologin">登录</a> -->
+			
+			<a href="javascript:;" class="login_btn " @click="loginFun" v-bind:class="{nologin : onClass}">登录</a>
+			
+			<p class="loginTips" id="loginTips" v-bind:style="{display:displayClass}"><span>登录成功</span></p>			
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+  data () {
+    return {
+        onClass : true,
+    	eyeClass : false,
+        displayClass : 'none',
+        dataJson : {}
+    }
+  },
+
+  methods: {
+    loginFun : function(){
+        this.onClass = true;
+    	if(!this.dataJson.account){
+    		this.$store.commit('alert',{show:true,text:'请输入手机号'});
+    		return;
+    	// }
+    	// else if(!this.verifyPhone(this.dataJson.account)){
+    	// 	this.$store.commit('alert',{show:true,text:'手机格式不正确'});
+    	// 	return;
+    	}else if(!this.dataJson.password){
+    		this.$store.commit('alert',{show:true,text:'请输入密码'});
+    		return;
+    	}
+    	else{
+    		this.$http.post('/Shop/Login/login', this.dataJson,{emulateJSON:true}).then(function(response){	
+                var returnData = response['data'];
+    			if( returnData.status == '200000' ){	
+    				
+                    localStorage.session_id = returnData['data']['session_id'];
+                    window.location.href="mitchell://login?user_id="+returnData['data']['user']['id']+"&session_id="+returnData['data']['session_id']
+    				this.$router.push('/');				
+    			}else{
+                    this.displayClass = 'none';
+    				this.$store.commit('alert',{show:true,text:returnData.message});
+    				this.dataJson = {};
+    			}    	
+	    	});
+    	}    	    	
+    },
+    showEye : function(){
+    	var pwd = document.getElementById('pwd');
+    	if(this.eyeClass == true){
+    		this.eyeClass = false;
+    		pwd.setAttribute('type','password');
+    	}else{
+    		this.eyeClass = true;
+    		pwd.setAttribute('type','text');
+    	}
+    	
+    	
+    },
+    verifyPhone : function(telephone){
+	    var telReg = !!telephone.match(/^(0|86|17951)?(13[0-9]|15[012356789]|17[6780]|18[0-9]|14[57])[0-9]{8}$/);
+	    //如果手机号码不能通过验证
+	    return telReg;
+    },
+    verifyPassword : function(password){
+      var reg = /^[A-Za-z0-9]{6,20}$/;
+      if( !password)
+        return false;
+      else if(reg.test(password))
+        return true;
+      else 
+        return false;
+    },
+    checkFinish : function(){
+        var isPhone = this.verifyPhone(this.dataJson.account);
+        var isPassword = this.verifyPassword(this.dataJson.password);
+        if(  isPhone && isPassword){
+            this.onClass = false;
+        }
+        else{
+            this.onClass = true;
+        }
+    }
+
+  }
+
+}
+</script>
+

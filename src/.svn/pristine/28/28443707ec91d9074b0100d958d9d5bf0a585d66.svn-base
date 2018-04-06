@@ -1,0 +1,127 @@
+<template>
+  	<div class="content">
+		<header class="head">
+			<router-link :to="{name: 'orderList'}">
+			<a class="back" href=""></a>
+			</router-link>
+			<h1 class="y-confirm-order-h1">编辑订单</h1>
+		</header>
+		<div class="main">
+			<div class="edordWrap">
+				<div class="edomsg">
+					<h1>订单信息</h1>
+					<div class="omsg">
+						<div class="ordermsn">
+							<p>订单号：{{orderData.order_sn}}</p>
+							<span v-if="orderData.status==0">待支付</span>
+							<span v-if="orderData.status==1">待发货</span>
+							<span v-if="orderData.status==2">待收货</span>
+							<span v-if="orderData.status==3">待评价</span>
+							<span v-if="orderData.status==4">已完成</span>
+							<span v-if="orderData.status==5">已取消</span>
+							<span v-if="orderData.status==6">退换货</span>
+							<span v-if="orderData.status==7">待接单</span>
+							<span v-if="orderData.status==8">待生产</span>
+						</div>
+						<div class="ookinline">
+							<p>订单金额</p>
+							<span>￥{{orderData.total}}</span>
+						</div>
+						<div class="ookinline">
+							<p>优惠金额</p>
+							<span>￥{{orderData.coupon_total}}</span>
+						</div>
+						<div class="ookinline">
+							<p>实付金额</p>
+							<div class="oplinput">
+								<em>￥</em>
+								<input type="text" name="" v-model="orderData.real_pay" v-bind:readonly="inputStyle" @change="submitData()">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="edomsg">
+					<div class="edmadTop">
+						<span>配送信息</span>
+						<router-link :to="{name: 'editDeliveryMsg',query:{order_sn : orderData.order_sn}}" v-if="orderData.status==7 || orderData.status == 1 || orderData.status == 8"></router-link>
+					</div>
+					<a href="javascript:;" class="y-consignee-imfo">
+	                    <div class="y-line1 clearfix">
+	                      <div class="y-name"><em>{{orderData.consignee}}</em></div>   
+	                      <div class="y-phone">{{orderData.telephone}}</div>
+	                    </div>
+	                    <p class="y-address">{{orderData.province}}{{orderData.city}}{{orderData.country}}{{orderData.address}}</p>
+	                    <i class="y-icon2"></i>
+	                </a>
+				</div>
+				<div class="edomsg">
+					<div class="edmadTop">
+						<span>备注信息</span>
+						<router-link :to="{name:'sellerRemarks',query:{order_sn : dataJson.order_sn,total : dataJson.total}}"></router-link>
+					</div>
+					<div class="edmbei">
+						<div class="odbei" v-if="orderData.message != ''">买家备注：{{orderData.message}}</div>
+						<div class="odbei" v-else>买家备注：无买家备注</div>
+						<div class="odbei" v-if="orderData.merchant_remark != ''">卖家备注：{{orderData.merchant_remark}}</div>
+						<div class="odbei" v-else>卖家备注：无卖家备注</div>
+					</div>
+				</div>
+			</div>
+		</div>
+  	</div>
+</template>
+<script>
+export default {
+
+  data () {
+    return {
+    	inputStyle : true,
+    	user : [],
+    	orderData : [],
+        dataJson : {
+        	order_sn : this.$route.query.order_sn,
+	      	session_id : localStorage.session_id,
+	      	// total : this.$route.query.total,
+	    }
+    }
+  },
+  created(){
+  	this.showOrder();
+  	// this.submitData();
+  	
+  },
+  methods: {
+    submitData : function(){
+    	this.dataJson.real_pay = this.orderData.real_pay;
+    	this.$http.post('/Shop/Order/editOrderTotal', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              console.log(returnData);
+              if( returnData['status'] == "200000" ){
+                this.user = returnData['data']['user'];
+
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }    
+          });
+    },
+    showOrder : function(){
+    	this.$http.post('/Shop/Order/merchantOrderDetail', this.dataJson,{emulateJSON:true}).then(function(response){ 
+              var returnData = response.data;
+              if( returnData['status'] == "200000" ){
+                this.orderData = returnData['data']['orderData'];
+                console.log(this.orderData);
+                //当订单未支付时，才可以编辑
+                if(this.orderData.status == 0)
+                	this.inputStyle = false;
+              }
+              else{
+                this.$store.commit('alert',{show:true,text:returnData.message});
+              }  
+          })
+    }
+  }
+
+}
+</script>
+
